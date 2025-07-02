@@ -62,7 +62,7 @@ public class SimpleCalculator : MonoBehaviour
         cursorIndex = 0;
         RenderDisplay();
     }
-    public void OnLeftArrow()  => MoveCursor(-1);
+    public void OnLeftArrow() => MoveCursor(-1);
     public void OnRightArrow() => MoveCursor(1);
 
     public void InsertLatexWithBraces(string latex)
@@ -96,11 +96,168 @@ public class SimpleCalculator : MonoBehaviour
         RenderDisplay();
     }
 
-    private void MoveCursor(int delta)
+private void MoveCursor(int delta)
+{
+    int oldIndex = cursorIndex;
+    string s     = inputBuffer.ToString();
+    int len      = s.Length;
+
+    // 1) Naive one‐step clamp
+    cursorIndex = Mathf.Clamp(oldIndex + delta, 0, len);
+
+    if (delta > 0)
     {
-        cursorIndex = Mathf.Clamp(cursorIndex + delta, 0, inputBuffer.Length);
-        RenderDisplay();
+        // 2) If on '\' (LaTeX function), jump inside its first '{'
+        if (oldIndex < len && s[oldIndex] == '\\')
+        {
+            int funcEnd = oldIndex + 1;
+            while (funcEnd < len && char.IsLetter(s[funcEnd]))
+                funcEnd++;
+            int firstBrace = s.IndexOf('{', funcEnd);
+            if (firstBrace >= 0)
+            {
+                cursorIndex = firstBrace + 1;
+                RenderDisplay();
+                return;
+            }
+        }
+
+        // 3) If on '^', jump inside its '{…}' block
+        if (oldIndex < len && s[oldIndex] == '^')
+        {
+            int brace = s.IndexOf('{', oldIndex + 1);
+            if (brace >= 0)
+            {
+                cursorIndex = brace + 1;
+                RenderDisplay();
+                return;
+            }
+        }
+
+        // 4) If on '}' and next char is '^', leap into that exponent‐brace
+        if (oldIndex < len 
+            && s[oldIndex] == '}' 
+            && oldIndex + 1 < len 
+            && s[oldIndex + 1] == '^')
+        {
+            int brace = s.IndexOf('{', oldIndex + 2);
+            if (brace >= 0)
+            {
+                cursorIndex = brace + 1;
+                RenderDisplay();
+                return;
+            }
+        }
+
+        // 5) NEW: If on '}' and next char is '{', jump into that brace
+        if (oldIndex < len 
+            && s[oldIndex] == '}' 
+            && oldIndex + 1 < len 
+            && s[oldIndex + 1] == '{')
+        {
+            cursorIndex = oldIndex + 2;  // skip the '{' and land inside
+            RenderDisplay();
+            return;
+        }
+
+        // 6) If we’re on a closing '}', just accept the one‐step move
+        if (oldIndex < len && s[oldIndex] == '}')
+        {
+            RenderDisplay();
+            return;
+        }
+
+        // 7) If we’re not on an opening '{', we’re done
+        if (oldIndex < len && s[oldIndex] != '{')
+        {
+            RenderDisplay();
+            return;
+        }
+
+        // 8) Otherwise (we were on '{'), scan forward to the next brace
+        for (int i = oldIndex + 1; i < len; i++)
+        {
+            if (s[i] == '{' || s[i] == '}')
+            {
+                cursorIndex = i + 1;
+                break;
+            }
+        }
     }
+    else if (delta < 0)
+    {
+        // 9) Skip backslash (function)
+        if (oldIndex > 0 && s[oldIndex - 1] == '\\')
+        {
+            cursorIndex = Mathf.Max(0, oldIndex - 2);
+            RenderDisplay();
+            return;
+        }
+
+        // 10) Skip '^' one step
+        if (oldIndex > 0 && s[oldIndex - 1] == '^')
+        {
+            cursorIndex = Mathf.Max(0, oldIndex - 1);
+            RenderDisplay();
+            return;
+        }
+
+        // 11) If stepping off '}', land inside it
+        if (oldIndex > 0 && s[oldIndex - 1] == '}')
+        {
+            cursorIndex = oldIndex - 1;
+            RenderDisplay();
+            return;
+        }
+
+        // 12) If we just stepped off the first '{' of a function, jump to before '\'
+        if (oldIndex > 0 && s[oldIndex - 1] == '{')
+        {
+            int bracePos  = oldIndex - 1;
+            int funcStart = s.LastIndexOf('\\', bracePos);
+            if (funcStart >= 0 && s.IndexOf('{', funcStart) == bracePos)
+            {
+                cursorIndex = funcStart;
+                RenderDisplay();
+                return;
+            }
+        }
+
+        // 13) One‐step back if left char isn’t a brace
+        if (oldIndex > 0 && s[oldIndex - 1] != '{' && s[oldIndex - 1] != '}')
+        {
+            cursorIndex = oldIndex - 1;
+            RenderDisplay();
+            return;
+        }
+
+        // 14) Otherwise scan backward to the previous brace
+        for (int i = oldIndex - 2; i >= 0; i--)
+        {
+            if (s[i] == '}')
+            {
+                cursorIndex = i;
+                break;
+            }
+            else if (s[i] == '{')
+            {
+                cursorIndex = i + 1;
+                break;
+            }
+        }
+    }
+
+    // 15) Final clamp & redraw
+    cursorIndex = Mathf.Clamp(cursorIndex, 0, len);
+    RenderDisplay();
+}
+
+
+
+
+
+
+
 
     private void Evaluate()
     {
@@ -131,4 +288,5 @@ public class SimpleCalculator : MonoBehaviour
             output = output.Insert(cursorIndex, cursorChar);
         displayTex.text = output;
     }
+
 }

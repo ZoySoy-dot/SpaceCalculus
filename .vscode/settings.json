@@ -66,5 +66,5 @@
     "explorer.fileNesting.patterns": {
         "*.sln": "*.csproj"
     },
-    "dotnet.defaultSolution": "SpaceCalculus.sln"
+    "dotnet.defaultSolution": "SpaceCalc.sln"
 }
