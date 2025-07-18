@@ -103,12 +103,12 @@ TextureImporter:
       name: Spaceship_0
       rect:
         serializedVersion: 2
-        x: 6
-        y: 2
-        width: 21
-        height: 21
+        x: 279
+        y: 186
+        width: 1550
+        height: 1457
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -125,7 +125,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: cae36b61f43b75d42ad5d53b65ca84b3
     internalID: 0
     vertices: []
     indices: 
@@ -133,7 +133,9 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
-      entries: []
+      entries:
+      - key: SpriteEditor.SliceOnImport
+        value: False
     nameFileIdTable:
       Spaceship_0: 7851470227991654557
   mipmapLimitGroupName: 
